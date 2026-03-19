@@ -1,8 +1,8 @@
-# VDL Generator
+# Vdlgen
 
-Tired of writing and syncing Facelets `.taglib.xml` files? VDL Generator might be what you're looking for!
+Tired of writing and syncing Facelets `.taglib.xml` files? Vdlgen might be what you're looking for!
 
-VDL Generator is a compile-time annotation processor that generates Jakarta Faces Facelet tag library descriptor files (`*.taglib.xml`) from source code annotations and Javadoc. Instead of maintaining verbose XML by hand, you annotate your components, converters, validators, tag handlers, and EL functions — and the processor generates a correct, complete `taglib.xml` during compilation. Your Javadoc doubles as your VDL documentation, so the two can never drift apart.
+Vdlgen is a compile-time annotation processor that generates Jakarta Faces Facelet tag library descriptor files (`*.taglib.xml`) from source code annotations and Javadoc. Instead of maintaining verbose XML by hand, you annotate your components, converters, validators, tag handlers, and EL functions — and the processor generates a correct, complete `taglib.xml` during compilation. Your Javadoc doubles as your VDL documentation, so the two can never drift apart.
 
 ## Requirements
 
@@ -310,7 +310,7 @@ The standard `binding` attribute and method expression attributes like `validato
 
 ## Generating VDL documentation
 
-Once your `taglib.xml` is generated, you can turn it into browsable HTML documentation using [Vdldoc](https://github.com/omnifaces/vdldoc) — the Javadoc-style documentation generator for Facelets tag libraries. Since VDL Generator produces standard `taglib.xml` files, Vdldoc works out of the box. Together they form a complete pipeline: annotate your source code, compile to generate the `taglib.xml`, and run Vdldoc to publish polished VDL documentation.
+Once your `taglib.xml` is generated, you can turn it into browsable HTML documentation using [Vdldoc](https://github.com/omnifaces/vdldoc) — the Javadoc-style documentation generator for Facelets tag libraries. Since Vdlgen produces standard `taglib.xml` files, Vdldoc works out of the box. Together they form a complete pipeline: annotate your source code, compile to generate the `taglib.xml`, and run Vdldoc to publish polished VDL documentation.
 
 For a live example, see the [OmniFaces VDL documentation](https://omnifaces.org/docs/vdldoc/current/).
 
