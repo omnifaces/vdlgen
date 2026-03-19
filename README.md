@@ -282,7 +282,7 @@ Tag attribute descriptions are resolved from multiple sources, in order of prece
 
 1. **`@FacesAttribute(description = "...")`** — explicit override, always wins.
 2. **Setter Javadoc** (components) or **field Javadoc** (tag handlers) — the leading "Sets " or "Set " prefix is stripped and the first letter is capitalized. Javadoc `{@code ...}`, `{@link ...}`, and `{@literal ...}` inline tags are converted to readable text.
-3. **Jakarta Faces taglib XML** — for inherited attributes from standard component types (e.g. `HtmlInputText`), the processor reads descriptions from Mojarra's bundled `faces.html.taglib.xml` and `faces.core.taglib.xml`, matched by component type.
+3. **Jakarta Faces taglib XML** — for inherited attributes from standard component types (e.g. `HtmlInputText`), the processor reads descriptions from Jakarta Faces implementation-bundled `faces.html.taglib.xml` and `faces.core.taglib.xml`, matched by component type.
 4. **Built-in fallback descriptions** — for base class attributes like `UIComponent#id` and `UIComponent#rendered` whose component types are not present in the standard taglib files.
 
 Tag and function descriptions are taken from the class-level or method-level Javadoc respectively.
