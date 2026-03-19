@@ -22,7 +22,32 @@ Add the dependency with `provided` scope — it is only needed at compile time a
 </dependency>
 ```
 
-No additional build plugin or compiler configuration is required. The annotation processor is discovered automatically via `META-INF/services/javax.annotation.processing.Processor`.
+No additional build plugin or compiler configuration is required. The annotation processor is discovered automatically via `META-INF/services/javax.annotation.processing.Processor`, as long as your `maven-compiler-plugin` does not have `<annotationProcessorPaths>` configured. If it does, then processor discovery from the compile classpath is disabled and you must explicitly add vdlgen there (see below).
+
+If your components extend standard HTML component classes (e.g. `HtmlInputText`, `HtmlMessages`), the processor needs access to Jakarta Faces implementation-bundled taglib XML files to resolve inherited attribute descriptions. In that case, add the implementation jar to the annotation processor path. Below example uses Mojarra:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>org.omnifaces</groupId>
+                <artifactId>vdlgen</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </path>
+            <path>
+                <groupId>org.glassfish</groupId>
+                <artifactId>jakarta.faces</artifactId>
+                <version>${mojarra.version}</version>
+            </path>
+        </annotationProcessorPaths>
+    </configuration>
+</plugin>
+```
+
+This is not needed when your components only extend base classes like `UIComponentBase` directly.
 
 ## Quick start
 
