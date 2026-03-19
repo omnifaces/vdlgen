@@ -308,6 +308,12 @@ Certain framework-internal setters are automatically excluded (e.g. `UIComponent
 
 The standard `binding` attribute and method expression attributes like `validator`, `valueChangeListener`, `action`, and `actionListener` are automatically added where applicable based on the component's position in the class hierarchy.
 
+## Generating VDL documentation
+
+Once your `taglib.xml` is generated, you can turn it into browsable HTML documentation using [Vdldoc](https://github.com/omnifaces/vdldoc) — the Javadoc-style documentation generator for Facelets tag libraries. Since VDL Generator produces standard `taglib.xml` files, Vdldoc works out of the box. Together they form a complete pipeline: annotate your source code, compile to generate the `taglib.xml`, and run Vdldoc to publish polished VDL documentation.
+
+For a live example, see the [OmniFaces VDL documentation](https://omnifaces.org/docs/vdldoc/current/).
+
 ## License
 
 [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
