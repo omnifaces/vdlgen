@@ -20,7 +20,7 @@ Add the dependency with `provided` scope — it is only needed at compile time a
 <dependency>
     <groupId>org.omnifaces</groupId>
     <artifactId>vdlgen</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -38,7 +38,7 @@ If your components extend standard HTML component classes (e.g. `HtmlInputText`,
             <path>
                 <groupId>org.omnifaces</groupId>
                 <artifactId>vdlgen</artifactId>
-                <version>1.0</version>
+                <version>1.1-SNAPSHOT</version>
             </path>
             <path>
                 <groupId>org.glassfish</groupId>
