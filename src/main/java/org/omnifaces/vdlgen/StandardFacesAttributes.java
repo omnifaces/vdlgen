@@ -47,8 +47,7 @@ final class StandardFacesAttributes {
             entry("jakarta.faces.component.UIData", Set.of("rowIndex", "rowData", "wrappedData", "localValueSet")),
             entry("jakarta.faces.component.UIForm", Set.of("prependId", "submitted")),
             entry("jakarta.faces.component.UIViewRoot", Set.of("inView")),
-            entry("jakarta.faces.component.html.HtmlInputFile",
-                    Set.of("accesskey", "alt", "autocomplete", "maxlength", "readonly", "size")),
+            entry("jakarta.faces.component.html.HtmlInputFile", Set.of("accesskey", "alt", "autocomplete", "maxlength", "readonly", "size")),
             entry("jakarta.faces.convert.NumberConverter", Set.of("transient")));
 
     /**

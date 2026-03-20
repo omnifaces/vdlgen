@@ -2,7 +2,7 @@
 
 Tired of writing and syncing Facelets `.taglib.xml` files? Vdlgen might be what you're looking for!
 
-Vdlgen is a compile-time annotation processor that generates Jakarta Faces Facelet tag library descriptor files (`*.taglib.xml`) from source code annotations and Javadoc. Instead of maintaining verbose XML by hand, you annotate your components, converters, validators, tag handlers, and EL functions — and the processor generates a correct, complete `taglib.xml` during compilation. Your Javadoc doubles as your VDL documentation, so the two can never drift apart.
+Vdlgen is a compile-time annotation processor that generates Jakarta Faces Facelet tag library descriptor files (`*.taglib.xml`) from source code annotations and Javadoc. Instead of maintaining verbose XML by hand, you annotate your components, converters, validators, behaviors, tag handlers, and EL functions — and the processor generates a correct, complete `taglib.xml` during compilation. Your Javadoc doubles as your VDL documentation, so the two can never drift apart.
 
 ## Requirements
 
@@ -108,11 +108,11 @@ The class-level Javadoc becomes the tag description.
 
 ### 3. Add converter and validator tags
 
-Annotate a `@FacesConverter` or `@FacesValidator` class with `@FacesTag`:
+Annotate a `@FacesConverter` class with `@FacesConverterTag`:
 
 ```java
 @FacesConverter("com.example.TrimConverter")
-@FacesTag(namespace = "http://example.com/mylib")
+@FacesConverterTag(namespace = "http://example.com/mylib")
 public class TrimConverter implements Converter<String> {
 
     /**
@@ -128,7 +128,35 @@ public class TrimConverter implements Converter<String> {
 }
 ```
 
-### 4. Add tag handler tags
+Annotate a `@FacesValidator` class with `@FacesValidatorTag`:
+
+```java
+@FacesValidator("com.example.RequiredCheckboxValidator")
+@FacesValidatorTag(namespace = "http://example.com/mylib")
+public class RequiredCheckboxValidator implements Validator<Boolean> {
+
+    @Override
+    public void validate(FacesContext context, UIComponent component, Boolean value) throws ValidatorException { ... }
+}
+```
+
+### 4. Add behavior tags
+
+Annotate a `@FacesBehavior` class with `@FacesBehaviorTag`:
+
+```java
+@FacesBehavior("com.example.ConfirmBehavior")
+@FacesBehaviorTag(namespace = "http://example.com/mylib")
+public class ConfirmBehavior extends ClientBehaviorBase {
+
+    /**
+     * Sets the confirmation message to display.
+     */
+    public void setMessage(String message) { ... }
+}
+```
+
+### 5. Add tag handler tags
 
 Annotate a `TagHandler` subclass with `@FacesTagHandler` and its `TagAttribute` fields with `@FacesAttribute`:
 
@@ -166,7 +194,7 @@ public class MyValidatorHandler extends ValidatorHandler {
 }
 ```
 
-### 5. Add EL functions
+### 6. Add EL functions
 
 Register individual methods with `@FacesFunction`:
 
@@ -214,14 +242,35 @@ Placed on a class to declare a tag library.
 | `description` | no       | empty                                    | The `<description>` in the generated XML.                                                            |
 | `version`     | no       | `V_4_1`                                  | Taglib schema version. Available values: `V_4_1`, `V_4_0`.                                          |
 
-### `@FacesTag`
+### `@FacesConverterTag`
 
-Placed on a `@FacesConverter` or `@FacesValidator` class to include it as a tag.
+Placed on a `@FacesConverter` class to include it as a converter tag.
 
-| Attribute   | Required | Default                            | Description                                          |
-|-------------|----------|------------------------------------|------------------------------------------------------|
-| `namespace` | yes      |                                    | Must match a declared `@FaceletTagLibrary` namespace. |
-| `tagName`   | no       | decapitalized simple class name    | Override the generated tag name.                     |
+| Attribute      | Required | Default                            | Description                                          |
+|----------------|----------|------------------------------------|------------------------------------------------------|
+| `namespace`    | yes      |                                    | Must match a declared `@FaceletTagLibrary` namespace. |
+| `tagName`      | no       | decapitalized simple class name    | Override the generated tag name.                     |
+| `handlerClass` | no       | `ConverterHandler`                 | Custom `ConverterHandler` class. Generates `<handler-class>`. |
+
+### `@FacesValidatorTag`
+
+Placed on a `@FacesValidator` class to include it as a validator tag.
+
+| Attribute      | Required | Default                            | Description                                          |
+|----------------|----------|------------------------------------|------------------------------------------------------|
+| `namespace`    | yes      |                                    | Must match a declared `@FaceletTagLibrary` namespace. |
+| `tagName`      | no       | decapitalized simple class name    | Override the generated tag name.                     |
+| `handlerClass` | no       | `ValidatorHandler`                 | Custom `ValidatorHandler` class. Generates `<handler-class>`. |
+
+### `@FacesBehaviorTag`
+
+Placed on a `@FacesBehavior` class to include it as a behavior tag.
+
+| Attribute      | Required | Default                            | Description                                          |
+|----------------|----------|------------------------------------|------------------------------------------------------|
+| `namespace`    | yes      |                                    | Must match a declared `@FaceletTagLibrary` namespace. |
+| `tagName`      | no       | decapitalized simple class name    | Override the generated tag name.                     |
+| `handlerClass` | no       | `BehaviorHandler`                  | Custom `BehaviorHandler` class. Generates `<handler-class>`. |
 
 ### `@FacesTagHandler`
 

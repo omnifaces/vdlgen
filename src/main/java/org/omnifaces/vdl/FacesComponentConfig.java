@@ -30,7 +30,7 @@ import org.omnifaces.vdlgen.FaceletTagLibraryProcessor;
  * <li>{@link #rendererType()} generates a {@code <renderer-type>} element inside the {@code <component>} element.</li>
  * </ul>
  * <p>
- * The {@link #componentHandler()} can also be used on a {@link FacesTag}-annotated converter or validator class.
+ * This annotation is only supported on {@link FacesComponent}-annotated classes.
  *
  * @author Bauke Scholtz
  * @since 1.0

@@ -49,6 +49,7 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
 import jakarta.faces.component.FacesComponent;
+import jakarta.faces.component.behavior.FacesBehavior;
 import jakarta.faces.convert.FacesConverter;
 import jakarta.faces.validator.FacesValidator;
 import jakarta.xml.bind.JAXBException;
@@ -66,8 +67,10 @@ import org.omnifaces.vdl.FacesAttribute;
 import org.omnifaces.vdl.FacesComponentConfig;
 import org.omnifaces.vdl.FacesFunction;
 import org.omnifaces.vdl.FacesFunctions;
-import org.omnifaces.vdl.FacesTag;
+import org.omnifaces.vdl.FacesBehaviorTag;
+import org.omnifaces.vdl.FacesConverterTag;
 import org.omnifaces.vdl.FacesTagHandler;
+import org.omnifaces.vdl.FacesValidatorTag;
 import org.omnifaces.vdlgen.FaceletTaglib.Tag;
 
 /**
@@ -100,7 +103,9 @@ public class FaceletTagLibraryProcessor extends AbstractProcessor {
 		return Set.of(
 			FaceletTagLibrary.class.getCanonicalName(),
 			FaceletTagLibrary.List.class.getCanonicalName(),
-			FacesTag.class.getCanonicalName(),
+			FacesBehaviorTag.class.getCanonicalName(),
+			FacesConverterTag.class.getCanonicalName(),
+			FacesValidatorTag.class.getCanonicalName(),
 			FacesTagHandler.class.getCanonicalName(),
 			FacesComponentConfig.class.getCanonicalName(),
 			FacesAttribute.class.getCanonicalName(),
@@ -136,6 +141,7 @@ public class FaceletTagLibraryProcessor extends AbstractProcessor {
 		if (!taglibs.isEmpty()) {
 			collectComponents(env, taglibs);
 			collectConvertersAndValidators(env, taglibs);
+			collectBehaviors(env, taglibs);
 			collectTagHandlers(env, taglibs);
 			collectFunctions(env, taglibs);
 			generateTaglibXmlFiles(taglibs);
@@ -200,7 +206,7 @@ public class FaceletTagLibraryProcessor extends AbstractProcessor {
 			var componentType = facesComponent.value().isEmpty()
 				? typeElement.getQualifiedName().toString()
 				: facesComponent.value();
-			var handlerClass = getHandlerClass(typeElement);
+			var handlerClass = getComponentHandlerClass(typeElement);
 			var rendererType = findRendererType(typeElement);
 
 			var tag = taglib.addComponent(description, tagName, componentType, handlerClass, rendererType);
@@ -209,58 +215,126 @@ public class FaceletTagLibraryProcessor extends AbstractProcessor {
 	}
 
 	private void collectConvertersAndValidators(RoundEnvironment env, Map<String, FaceletTaglib> taglibs) {
-		for (var element : env.getElementsAnnotatedWith(FacesTag.class)) {
+		for (var element : env.getElementsAnnotatedWith(FacesConverterTag.class)) {
 			if (element.getKind() != ElementKind.CLASS) {
-				error("@FacesTag is only supported on a class", element);
+				error("@FacesConverterTag is only supported on a class", element);
 				continue;
 			}
 
 			var typeElement = (TypeElement) element;
-			var facesTag = typeElement.getAnnotation(FacesTag.class);
-			var taglib = getTaglib(taglibs, facesTag.namespace(), element);
+			var facesConverterTag = typeElement.getAnnotation(FacesConverterTag.class);
+			var taglib = getTaglib(taglibs, facesConverterTag.namespace(), element);
 
 			if (taglib == null) {
 				continue;
 			}
 
-			var description = processJavadoc(processingEnv.getElementUtils().getDocComment(typeElement));
-			var tagName = facesTag.tagName().isEmpty()
-				? Introspector.decapitalize(typeElement.getSimpleName().toString())
-				: facesTag.tagName();
-			var handlerClass = getHandlerClass(typeElement);
-
 			var facesConverter = typeElement.getAnnotation(FacesConverter.class);
-			var facesValidator = typeElement.getAnnotation(FacesValidator.class);
 
-			Tag tag;
-
-			if (facesConverter != null) {
-				var converterId = facesConverter.value();
-
-				if (converterId.isEmpty()) {
-					error("@FacesTag on a @FacesConverter requires a non-empty converter ID in @FacesConverter.value()", element);
-					continue;
-				}
-
-				tag = taglib.addConverter(description, tagName, converterId, handlerClass);
-				collectAttributes(tag, typeElement, collectParentConverterIds(typeElement));
-			}
-			else if (facesValidator != null) {
-				var validatorId = facesValidator.value();
-
-				if (validatorId.isEmpty()) {
-					error("@FacesTag on a @FacesValidator requires a non-empty validator ID in @FacesValidator.value()", element);
-					continue;
-				}
-
-				tag = taglib.addValidator(description, tagName, validatorId, handlerClass);
-				collectAttributes(tag, typeElement, collectParentValidatorIds(typeElement));
-			}
-			else {
-				error("@FacesTag is only supported on a @FacesConverter or @FacesValidator class; '"
-					+ typeElement.getQualifiedName() + "' has neither", element);
+			if (facesConverter == null) {
+				error("@FacesConverterTag is only supported on a @FacesConverter class; '"
+					+ typeElement.getQualifiedName() + "' is not annotated with @FacesConverter", element);
 				continue;
 			}
+
+			var converterId = facesConverter.value();
+
+			if (converterId.isEmpty()) {
+				error("@FacesConverterTag on a @FacesConverter requires a non-empty converter ID in @FacesConverter.value()", element);
+				continue;
+			}
+
+			var description = processJavadoc(processingEnv.getElementUtils().getDocComment(typeElement));
+			var tagName = facesConverterTag.tagName().isEmpty()
+				? Introspector.decapitalize(typeElement.getSimpleName().toString())
+				: facesConverterTag.tagName();
+			var handlerClass = extractHandlerClass(
+				() -> facesConverterTag.handlerClass(), "jakarta.faces.view.facelets.ConverterHandler");
+
+			var tag = taglib.addConverter(description, tagName, converterId, handlerClass);
+			collectAttributes(tag, typeElement, collectParentConverterIds(typeElement));
+		}
+
+		for (var element : env.getElementsAnnotatedWith(FacesValidatorTag.class)) {
+			if (element.getKind() != ElementKind.CLASS) {
+				error("@FacesValidatorTag is only supported on a class", element);
+				continue;
+			}
+
+			var typeElement = (TypeElement) element;
+			var facesValidatorTag = typeElement.getAnnotation(FacesValidatorTag.class);
+			var taglib = getTaglib(taglibs, facesValidatorTag.namespace(), element);
+
+			if (taglib == null) {
+				continue;
+			}
+
+			var facesValidator = typeElement.getAnnotation(FacesValidator.class);
+
+			if (facesValidator == null) {
+				error("@FacesValidatorTag is only supported on a @FacesValidator class; '"
+					+ typeElement.getQualifiedName() + "' is not annotated with @FacesValidator", element);
+				continue;
+			}
+
+			var validatorId = facesValidator.value();
+
+			if (validatorId.isEmpty()) {
+				error("@FacesValidatorTag on a @FacesValidator requires a non-empty validator ID in @FacesValidator.value()", element);
+				continue;
+			}
+
+			var description = processJavadoc(processingEnv.getElementUtils().getDocComment(typeElement));
+			var tagName = facesValidatorTag.tagName().isEmpty()
+				? Introspector.decapitalize(typeElement.getSimpleName().toString())
+				: facesValidatorTag.tagName();
+			var handlerClass = extractHandlerClass(
+				() -> facesValidatorTag.handlerClass(), "jakarta.faces.view.facelets.ValidatorHandler");
+
+			var tag = taglib.addValidator(description, tagName, validatorId, handlerClass);
+			collectAttributes(tag, typeElement, collectParentValidatorIds(typeElement));
+		}
+	}
+
+	private void collectBehaviors(RoundEnvironment env, Map<String, FaceletTaglib> taglibs) {
+		for (var element : env.getElementsAnnotatedWith(FacesBehaviorTag.class)) {
+			if (element.getKind() != ElementKind.CLASS) {
+				error("@FacesBehaviorTag is only supported on a class", element);
+				continue;
+			}
+
+			var typeElement = (TypeElement) element;
+			var facesBehaviorTag = typeElement.getAnnotation(FacesBehaviorTag.class);
+			var taglib = getTaglib(taglibs, facesBehaviorTag.namespace(), element);
+
+			if (taglib == null) {
+				continue;
+			}
+
+			var facesBehavior = typeElement.getAnnotation(FacesBehavior.class);
+
+			if (facesBehavior == null) {
+				error("@FacesBehaviorTag is only supported on a @FacesBehavior class; '"
+					+ typeElement.getQualifiedName() + "' is not annotated with @FacesBehavior", element);
+				continue;
+			}
+
+			var behaviorId = facesBehavior.value();
+
+			if (behaviorId.isEmpty()) {
+				error("@FacesBehaviorTag on a @FacesBehavior requires a non-empty behavior ID in @FacesBehavior.value()", element);
+				continue;
+			}
+
+			var description = processJavadoc(processingEnv.getElementUtils().getDocComment(typeElement));
+			var tagName = facesBehaviorTag.tagName().isEmpty()
+				? Introspector.decapitalize(typeElement.getSimpleName().toString())
+				: facesBehaviorTag.tagName();
+			var handlerClass = extractHandlerClass(
+				() -> facesBehaviorTag.handlerClass(), "jakarta.faces.view.facelets.BehaviorHandler");
+
+			var tag = taglib.addBehavior(description, tagName, behaviorId, handlerClass);
+			collectAttributes(tag, typeElement, List.of());
 		}
 	}
 
@@ -609,6 +683,13 @@ public class FaceletTagLibraryProcessor extends AbstractProcessor {
 	}
 
 	private void validateAnnotations(RoundEnvironment env) {
+		for (var element : env.getElementsAnnotatedWith(FacesComponentConfig.class)) {
+			if (element.getAnnotation(FacesComponent.class) == null) {
+				error("@FacesComponentConfig is only supported on a @FacesComponent class; '"
+					+ ((TypeElement) element).getQualifiedName() + "' is not annotated with @FacesComponent", element);
+			}
+		}
+
 		for (var element : env.getElementsAnnotatedWith(FacesAttribute.class)) {
 			if (element.getKind() == METHOD && !isSetterMethod((ExecutableElement) element)) {
 				error("@FacesAttribute on a method is only supported on setter methods; '"
@@ -676,23 +757,34 @@ public class FaceletTagLibraryProcessor extends AbstractProcessor {
 	}
 
 	/**
-	 * Returns the handler class from a {@link FacesComponentConfig#componentHandler()} annotation element.
+	 * Returns the component handler class from a {@link FacesComponentConfig#componentHandler()} annotation element.
 	 */
-	private String getHandlerClass(TypeElement typeElement) {
+	private String getComponentHandlerClass(TypeElement typeElement) {
 		var annotation = typeElement.getAnnotation(FacesComponentConfig.class);
 
 		if (annotation == null) {
 			return null;
 		}
 
+		return extractHandlerClass(
+			() -> annotation.componentHandler(), "jakarta.faces.view.facelets.ComponentHandler");
+	}
+
+	/**
+	 * Extracts a handler class FQN from an annotation attribute that holds a {@code Class<?>} value.
+	 * The attribute accessor must be a lambda that reads the annotation element (which throws
+	 * {@link MirroredTypeException} at compile time). Returns {@code null} when the value equals the
+	 * given default FQN (meaning "no custom handler").
+	 */
+	private String extractHandlerClass(Runnable classAccessor, String defaultFqn) {
 		try {
-			var handlerClass = annotation.componentHandler();
-			return handlerClass == jakarta.faces.view.facelets.ComponentHandler.class ? null : null;
+			classAccessor.run();
+			return null; // unreachable at compile time, but needed for the compiler
 		}
 		catch (MirroredTypeException e) {
 			var typeMirror = e.getTypeMirror();
 			var fqn = ((TypeElement) processingEnv.getTypeUtils().asElement(typeMirror)).getQualifiedName().toString();
-			return fqn.equals("jakarta.faces.view.facelets.ComponentHandler") ? null : fqn;
+			return fqn.equals(defaultFqn) ? null : fqn;
 		}
 	}
 

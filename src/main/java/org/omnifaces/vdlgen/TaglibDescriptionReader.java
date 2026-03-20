@@ -41,6 +41,10 @@ final class TaglibDescriptionReader {
 
 	private static final String TAGLIB_NAMESPACE = "https://jakarta.ee/xml/ns/jakartaee";
 	private static final Pattern HTML_TAG = Pattern.compile("<[^>]+>");
+    private static final String[] TAGLIB_PATHS = {
+        "com/sun/faces/metadata/taglib/faces.html.taglib.xml",
+        "com/sun/faces/metadata/taglib/faces.core.taglib.xml"
+    };
 
 	private final Map<String, Map<String, String>> descriptionsByTypeId;
 
@@ -77,24 +81,19 @@ final class TaglibDescriptionReader {
 	}
 
 	private static Enumeration<URL> findTaglibResources(ClassLoader classLoader) throws IOException {
-		return classLoader.getResources("com/sun/faces/metadata/taglib/faces.html.taglib.xml");
+		return classLoader.getResources(TAGLIB_PATHS[0]);
 	}
 
 	private static void parseTaglib(URL url, Map<String, Map<String, String>> descriptions) {
 		try {
 			var urlStr = url.toString();
 			var jarBaseUrl = urlStr.substring(0, urlStr.lastIndexOf("!/") + 2);
-			var taglibPaths = new String[] {
-				"com/sun/faces/metadata/taglib/faces.html.taglib.xml",
-				"com/sun/faces/metadata/taglib/faces.core.taglib.xml"
-			};
-
 			var factory = DocumentBuilderFactory.newInstance();
 			factory.setNamespaceAware(true);
 
 			var builder = factory.newDocumentBuilder();
 
-			for (var path : taglibPaths) {
+			for (var path : TAGLIB_PATHS) {
 				var taglibUrl = new URL(jarBaseUrl + path);
 
 				try (var input = taglibUrl.openStream()) {

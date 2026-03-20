@@ -24,6 +24,7 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.eclipse.persistence.oxm.annotations.XmlCDATA;
 import org.omnifaces.vdl.FaceletTagLibrary.Version;
+import org.omnifaces.vdlgen.FaceletTaglib.Tag.Behavior;
 import org.omnifaces.vdlgen.FaceletTaglib.Tag.Component;
 import org.omnifaces.vdlgen.FaceletTaglib.Tag.Converter;
 import org.omnifaces.vdlgen.FaceletTaglib.Tag.Validator;
@@ -129,6 +130,20 @@ class FaceletTaglib implements Comparable<FaceletTaglib> {
 		return tag;
 	}
 
+	Tag addBehavior(String description, String tagName, String behaviorId, String handlerClass) {
+		var behavior = new Behavior();
+		behavior.behaviorId = behaviorId;
+		behavior.handlerClass = handlerClass;
+		var tag = new Tag(description, tagName);
+		tag.behavior = behavior;
+
+		if (!tags.add(tag)) {
+			throw new IllegalStateException("Duplicate tag " + tag.tagName);
+		}
+
+		return tag;
+	}
+
 	Tag addTagHandler(String description, String tagName, String handlerClass) {
 		var tag = new Tag(description, tagName);
 		tag.handlerClass = handlerClass;
@@ -177,6 +192,9 @@ class FaceletTaglib implements Comparable<FaceletTaglib> {
 
 		@XmlElement
 		private Validator validator;
+
+		@XmlElement
+		private Behavior behavior;
 
 		@XmlElement(name = "handler-class")
 		private String handlerClass;
@@ -243,6 +261,16 @@ class FaceletTaglib implements Comparable<FaceletTaglib> {
 
 			@XmlElement(name = "validator-id")
 			private String validatorId;
+
+			@XmlElement(name = "handler-class")
+			private String handlerClass;
+		}
+
+		@XmlAccessorType(XmlAccessType.FIELD)
+		static class Behavior {
+
+			@XmlElement(name = "behavior-id")
+			private String behaviorId;
 
 			@XmlElement(name = "handler-class")
 			private String handlerClass;

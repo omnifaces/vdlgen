@@ -210,13 +210,13 @@ class FaceletTagLibraryProcessorTest {
 			import jakarta.faces.convert.Converter;
 			import jakarta.faces.context.FacesContext;
 			import jakarta.faces.component.UIComponent;
-			import org.omnifaces.vdl.FacesTag;
+			import org.omnifaces.vdl.FacesConverterTag;
 
 			/**
 			 * A test converter.
 			 */
 			@FacesConverter("test.MyConverter")
-			@FacesTag(namespace = "%s")
+			@FacesConverterTag(namespace = "%s")
 			public class MyConverter implements Converter<Object> {
 				@Override
 				public Object getAsObject(FacesContext context, UIComponent component, String value) {
@@ -254,10 +254,10 @@ class FaceletTagLibraryProcessorTest {
 			import jakarta.faces.validator.ValidatorException;
 			import jakarta.faces.context.FacesContext;
 			import jakarta.faces.component.UIComponent;
-			import org.omnifaces.vdl.FacesTag;
+			import org.omnifaces.vdl.FacesValidatorTag;
 
 			@FacesValidator("test.MyValidator")
-			@FacesTag(namespace = "%s")
+			@FacesValidatorTag(namespace = "%s")
 			public class MyValidator implements Validator<Object> {
 				@Override
 				public void validate(FacesContext context, UIComponent component, Object value) throws ValidatorException {}
@@ -276,6 +276,116 @@ class FaceletTagLibraryProcessorTest {
 
 		xml.contains("<validator-id>test.MyValidator</validator-id>");
 		xml.contains("<tag-name>myValidator</tag-name>");
+	}
+
+	// Behavior tags ---
+
+	@Test
+	void behaviorTag() {
+		var behavior = JavaFileObjects.forSourceString("test.MyBehavior", """
+			package test;
+
+			import jakarta.faces.component.behavior.FacesBehavior;
+			import jakarta.faces.component.behavior.ClientBehaviorBase;
+			import org.omnifaces.vdl.FacesBehaviorTag;
+
+			/**
+			 * A test behavior.
+			 */
+			@FacesBehavior("test.MyBehavior")
+			@FacesBehaviorTag(namespace = "%s")
+			public class MyBehavior extends ClientBehaviorBase {
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, behavior);
+
+		assertThat(compilation).succeeded();
+
+		var xml = assertThat(compilation)
+			.generatedFile(StandardLocation.CLASS_OUTPUT, TAGLIB_XML)
+			.contentsAsUtf8String();
+
+		xml.contains("<behavior-id>test.MyBehavior</behavior-id>");
+		xml.contains("<tag-name>myBehavior</tag-name>");
+	}
+
+	@Test
+	void facesBehaviorTagWithoutFacesBehavior() {
+		var clazz = JavaFileObjects.forSourceString("test.NotABehavior", """
+			package test;
+
+			import org.omnifaces.vdl.FacesBehaviorTag;
+
+			@FacesBehaviorTag(namespace = "%s")
+			public class NotABehavior {}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesBehaviorTag is only supported on a @FacesBehavior class");
+	}
+
+	@Test
+	void facesBehaviorTagOnFacesConverterClass() {
+		var clazz = JavaFileObjects.forSourceString("test.NotABehavior", """
+			package test;
+
+			import jakarta.faces.convert.FacesConverter;
+			import jakarta.faces.convert.Converter;
+			import jakarta.faces.context.FacesContext;
+			import jakarta.faces.component.UIComponent;
+			import org.omnifaces.vdl.FacesBehaviorTag;
+
+			@FacesConverter("test.NotABehavior")
+			@FacesBehaviorTag(namespace = "%s")
+			public class NotABehavior implements Converter<Object> {
+				@Override
+				public Object getAsObject(FacesContext context, UIComponent component, String value) {
+					return null;
+				}
+
+				@Override
+				public String getAsString(FacesContext context, UIComponent component, Object value) {
+					return null;
+				}
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesBehaviorTag is only supported on a @FacesBehavior class");
+	}
+
+	@Test
+	void facesBehaviorTagWithEmptyBehaviorId() {
+		var clazz = JavaFileObjects.forSourceString("test.BadBehavior", """
+			package test;
+
+			import jakarta.faces.component.behavior.FacesBehavior;
+			import jakarta.faces.component.behavior.ClientBehaviorBase;
+			import org.omnifaces.vdl.FacesBehaviorTag;
+
+			@FacesBehavior("")
+			@FacesBehaviorTag(namespace = "%s")
+			public class BadBehavior extends ClientBehaviorBase {
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesBehaviorTag on a @FacesBehavior requires a non-empty behavior ID");
 	}
 
 	// Tag handler ---
@@ -624,13 +734,13 @@ class FaceletTagLibraryProcessorTest {
 	// Error cases ---
 
 	@Test
-	void facesTagWithoutConverterOrValidator() {
+	void facesConverterTagWithoutFacesConverter() {
 		var clazz = JavaFileObjects.forSourceString("test.NotAConverter", """
 			package test;
 
-			import org.omnifaces.vdl.FacesTag;
+			import org.omnifaces.vdl.FacesConverterTag;
 
-			@FacesTag(namespace = "%s")
+			@FacesConverterTag(namespace = "%s")
 			public class NotAConverter {}
 			""".formatted(NAMESPACE));
 
@@ -639,7 +749,150 @@ class FaceletTagLibraryProcessorTest {
 			.compile(CONFIG, clazz);
 
 		assertThat(compilation).failed();
-		assertThat(compilation).hadErrorContaining("@FacesTag is only supported on a @FacesConverter or @FacesValidator");
+		assertThat(compilation).hadErrorContaining("@FacesConverterTag is only supported on a @FacesConverter class");
+	}
+
+	@Test
+	void facesConverterTagOnFacesValidatorClass() {
+		var clazz = JavaFileObjects.forSourceString("test.NotAConverter", """
+			package test;
+
+			import jakarta.faces.validator.FacesValidator;
+			import jakarta.faces.validator.Validator;
+			import jakarta.faces.validator.ValidatorException;
+			import jakarta.faces.context.FacesContext;
+			import jakarta.faces.component.UIComponent;
+			import org.omnifaces.vdl.FacesConverterTag;
+
+			@FacesValidator("test.NotAConverter")
+			@FacesConverterTag(namespace = "%s")
+			public class NotAConverter implements Validator<Object> {
+				@Override
+				public void validate(FacesContext context, UIComponent component, Object value) throws ValidatorException {}
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesConverterTag is only supported on a @FacesConverter class");
+	}
+
+	@Test
+	void facesConverterTagWithEmptyConverterId() {
+		var clazz = JavaFileObjects.forSourceString("test.BadConverter", """
+			package test;
+
+			import jakarta.faces.convert.FacesConverter;
+			import jakarta.faces.convert.Converter;
+			import jakarta.faces.context.FacesContext;
+			import jakarta.faces.component.UIComponent;
+			import org.omnifaces.vdl.FacesConverterTag;
+
+			@FacesConverter
+			@FacesConverterTag(namespace = "%s")
+			public class BadConverter implements Converter<Object> {
+				@Override
+				public Object getAsObject(FacesContext context, UIComponent component, String value) {
+					return null;
+				}
+
+				@Override
+				public String getAsString(FacesContext context, UIComponent component, Object value) {
+					return null;
+				}
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesConverterTag on a @FacesConverter requires a non-empty converter ID");
+	}
+
+	@Test
+	void facesValidatorTagWithoutFacesValidator() {
+		var clazz = JavaFileObjects.forSourceString("test.NotAValidator", """
+			package test;
+
+			import org.omnifaces.vdl.FacesValidatorTag;
+
+			@FacesValidatorTag(namespace = "%s")
+			public class NotAValidator {}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesValidatorTag is only supported on a @FacesValidator class");
+	}
+
+	@Test
+	void facesValidatorTagOnFacesConverterClass() {
+		var clazz = JavaFileObjects.forSourceString("test.NotAValidator", """
+			package test;
+
+			import jakarta.faces.convert.FacesConverter;
+			import jakarta.faces.convert.Converter;
+			import jakarta.faces.context.FacesContext;
+			import jakarta.faces.component.UIComponent;
+			import org.omnifaces.vdl.FacesValidatorTag;
+
+			@FacesConverter("test.NotAValidator")
+			@FacesValidatorTag(namespace = "%s")
+			public class NotAValidator implements Converter<Object> {
+				@Override
+				public Object getAsObject(FacesContext context, UIComponent component, String value) {
+					return null;
+				}
+
+				@Override
+				public String getAsString(FacesContext context, UIComponent component, Object value) {
+					return null;
+				}
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesValidatorTag is only supported on a @FacesValidator class");
+	}
+
+	@Test
+	void facesValidatorTagWithEmptyValidatorId() {
+		var clazz = JavaFileObjects.forSourceString("test.BadValidator", """
+			package test;
+
+			import jakarta.faces.validator.FacesValidator;
+			import jakarta.faces.validator.Validator;
+			import jakarta.faces.validator.ValidatorException;
+			import jakarta.faces.context.FacesContext;
+			import jakarta.faces.component.UIComponent;
+			import org.omnifaces.vdl.FacesValidatorTag;
+
+			@FacesValidator
+			@FacesValidatorTag(namespace = "%s")
+			public class BadValidator implements Validator<Object> {
+				@Override
+				public void validate(FacesContext context, UIComponent component, Object value) throws ValidatorException {}
+			}
+			""".formatted(NAMESPACE));
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesValidatorTag on a @FacesValidator requires a non-empty validator ID");
 	}
 
 	@Test
@@ -687,7 +940,7 @@ class FaceletTagLibraryProcessorTest {
 	}
 
 	@Test
-	void unknownNamespaceOnFacesTag() {
+	void unknownNamespaceOnFacesConverterTag() {
 		var clazz = JavaFileObjects.forSourceString("test.MyConverter", """
 			package test;
 
@@ -695,10 +948,10 @@ class FaceletTagLibraryProcessorTest {
 			import jakarta.faces.convert.Converter;
 			import jakarta.faces.context.FacesContext;
 			import jakarta.faces.component.UIComponent;
-			import org.omnifaces.vdl.FacesTag;
+			import org.omnifaces.vdl.FacesConverterTag;
 
 			@FacesConverter("test.MyConverter")
-			@FacesTag(namespace = "http://unknown.example.com")
+			@FacesConverterTag(namespace = "http://unknown.example.com")
 			public class MyConverter implements Converter<Object> {
 				@Override
 				public Object getAsObject(FacesContext context, UIComponent component, String value) {
@@ -1041,6 +1294,25 @@ class FaceletTagLibraryProcessorTest {
 		xml.contains("<name>action</name>");
 		xml.contains("<method-signature>java.lang.Object action()</method-signature>");
 		xml.doesNotContain("<type>jakarta.el.MethodExpression</type>");
+	}
+
+	@Test
+	void facesComponentConfigWithoutFacesComponent() {
+		var clazz = JavaFileObjects.forSourceString("test.NotAComponent", """
+			package test;
+
+			import org.omnifaces.vdl.FacesComponentConfig;
+
+			@FacesComponentConfig(rendererType = "test.Renderer")
+			public class NotAComponent {}
+			""");
+
+		var compilation = javac()
+			.withProcessors(new FaceletTagLibraryProcessor())
+			.compile(CONFIG, clazz);
+
+		assertThat(compilation).failed();
+		assertThat(compilation).hadErrorContaining("@FacesComponentConfig is only supported on a @FacesComponent class");
 	}
 
 	@Test

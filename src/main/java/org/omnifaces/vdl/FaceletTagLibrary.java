@@ -39,8 +39,12 @@ import org.omnifaces.vdlgen.FaceletTagLibraryProcessor;
  * {@link FacesTagHandler#namespace() namespace} matches this taglib's {@link #namespace()} will be included as tag
  * handler tags. Their attributes are declared via {@link FacesAttribute} on
  * {@link jakarta.faces.view.facelets.TagAttribute TagAttribute} fields.</li>
- * <li>Converter/validator classes annotated with {@link FacesTag} whose {@link FacesTag#namespace() namespace} matches
- * this taglib's {@link #namespace()} will be included as converter/validator tags.</li>
+ * <li>Converter classes annotated with {@link FacesConverterTag} whose {@link FacesConverterTag#namespace() namespace}
+ * matches this taglib's {@link #namespace()} will be included as converter tags.</li>
+ * <li>Validator classes annotated with {@link FacesValidatorTag} whose {@link FacesValidatorTag#namespace() namespace}
+ * matches this taglib's {@link #namespace()} will be included as validator tags.</li>
+ * <li>Behavior classes annotated with {@link FacesBehaviorTag} whose {@link FacesBehaviorTag#namespace() namespace}
+ * matches this taglib's {@link #namespace()} will be included as behavior tags.</li>
  * <li>Methods annotated with {@link FacesFunction} whose {@link FacesFunction#namespace() namespace} matches this
  * taglib's {@link #namespace()} or classes annotated with {@link FacesFunctions} whose
  * {@link FacesFunctions#namespace() namespace} matches this taglib's {@link #namespace()} will be included
@@ -50,7 +54,9 @@ import org.omnifaces.vdlgen.FaceletTagLibraryProcessor;
  *
  * @author Bauke Scholtz
  * @since 1.0
- * @see FacesTag
+ * @see FacesBehaviorTag
+ * @see FacesConverterTag
+ * @see FacesValidatorTag
  * @see FacesTagHandler
  * @see FacesAttribute
  * @see FacesFunction

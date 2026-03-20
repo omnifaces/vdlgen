@@ -18,14 +18,14 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import jakarta.faces.convert.FacesConverter;
-import jakarta.faces.validator.FacesValidator;
+import jakarta.faces.component.behavior.FacesBehavior;
+import jakarta.faces.view.facelets.BehaviorHandler;
 
 import org.omnifaces.vdlgen.FaceletTagLibraryProcessor;
 
 /**
- * Registers a {@link FacesConverter} or {@link FacesValidator} class as a Facelet tag in the generated
- * {@code taglib.xml}. The class must also be annotated with {@link FacesConverter} or {@link FacesValidator}.
+ * Registers a {@link FacesBehavior} class as a Facelet behavior tag in the generated {@code taglib.xml}. The class
+ * must also be annotated with {@link FacesBehavior}.
  * <p>
  * The tag description is taken from the class Javadoc. The tag name defaults to the decapitalized simple class name.
  *
@@ -35,7 +35,7 @@ import org.omnifaces.vdlgen.FaceletTagLibraryProcessor;
  */
 @Target(TYPE)
 @Retention(SOURCE)
-public @interface FacesTag {
+public @interface FacesBehaviorTag {
 
 	/**
 	 * The Facelet tag library namespace. This must match the {@link FaceletTagLibrary#namespace()} of a declared
@@ -49,5 +49,11 @@ public @interface FacesTag {
 	 * @return The tag name.
 	 */
 	String tagName() default "";
+
+	/**
+	 * Optional custom handler class. Defaults to {@link BehaviorHandler} (no custom handler).
+	 * @return The handler class.
+	 */
+	Class<? extends BehaviorHandler> handlerClass() default BehaviorHandler.class;
 
 }
