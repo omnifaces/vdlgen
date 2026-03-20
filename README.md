@@ -1,3 +1,6 @@
+[![Maven](https://img.shields.io/maven-central/v/org.omnifaces/vdlgen)](https://search.maven.org/artifact/org.omnifaces/vdlgen)
+[![Javadoc](https://javadoc.io/badge/org.omnifaces/vdlgen.svg)](https://javadoc.io/doc/org.omnifaces/vdlgen) 
+
 # Vdlgen
 
 Tired of writing and syncing Facelets `.taglib.xml` files? Vdlgen might be what you're looking for!
@@ -17,7 +20,7 @@ Add the dependency with `provided` scope — it is only needed at compile time a
 <dependency>
     <groupId>org.omnifaces</groupId>
     <artifactId>vdlgen</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -35,7 +38,7 @@ If your components extend standard HTML component classes (e.g. `HtmlInputText`,
             <path>
                 <groupId>org.omnifaces</groupId>
                 <artifactId>vdlgen</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>1.0</version>
             </path>
             <path>
                 <groupId>org.glassfish</groupId>
